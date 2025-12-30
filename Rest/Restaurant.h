@@ -45,11 +45,13 @@ private:
     int CountFinished;
 
 
-    // Helper functions
     void LoadInputFile(const std::string& filename);
     void ExecuteEvents(int currentTime);
     void MoveOneFromEachWaitToInService();
     void MoveOneFromInServiceToFinished();
+
+    void AssignNormalOrders(int CurrentTimeStep);
+
 
 public:
     Restaurant();

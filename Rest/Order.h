@@ -46,6 +46,8 @@ public:
 	//==================================
     // VIP Priority calculation
     double calculateVIPPriority() const;
+
+	//==================================
 };
 
 #endif

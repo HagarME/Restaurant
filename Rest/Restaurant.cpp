@@ -131,10 +131,11 @@ void Restaurant::RunSimulation()
         while (true)
         {
             ExecuteEvents(CurrentTimeStep);
-            MoveOneFromEachWaitToInService();
 
-            if (CurrentTimeStep % 5 == 1)
-                MoveOneFromInServiceToFinished();
+            //in this exact order
+            AssignVIPOrders(CurrentTimeStep);      // Highest priority first
+            AssignNormalOrders(CurrentTimeStep);    // Then Normal orders
+            //then vegan orders...
 
             FillDrawingList();
             pGUI->UpdateInterface();
@@ -522,5 +523,55 @@ void Restaurant::preemptOrder(Cook* cook, Order* order, int currentTime)
     }
 
     // When reassigned later, waiting time will be recalculated
+}
+
+void Restaurant::AssignNormalOrders(int currentTime)
+{
+    // Continue assigning while we have waiting Normal orders
+    while (!waitNormal.isEmpty())
+    {
+        // Peek at the next Normal order
+        // Complexity: O(1)
+        Node<Order*>* frontNode = waitNormal.getHead();
+        if (!frontNode) break;
+
+        Order* normalOrder = frontNode->getItem();
+        if (!normalOrder) break;
+
+        Cook* assignedCook = nullptr;
+
+        // Try Normal cooks first
+        // Complexity: O(N)،،،، N = number of Normal cooks
+        assignedCook = findAvailableCook(COOK_NRM);
+
+        // If no Normal cook available, try VIP cooks
+        // Complexity: O(V) where V = number of VIP cooks
+        if (!assignedCook)
+            assignedCook = findAvailableCook(COOK_VIP);
+
+        //If we found an available cook, assign the order
+        if (assignedCook)
+        {
+            // Remove from waiting list - O(1)
+            waitNormal.DeleteFirst();
+
+            // Assign order to cook - O(1)
+            assignedCook->assignOrder(normalOrder, currentTime);
+
+            // Calculate and store waiting time
+            int waitTime = currentTime - normalOrder->GetArrTime();
+            // You can store this in the order or accumulate statistics
+            normalOrder->setServTime(currentTime);
+
+            // Update statistics (in case)
+            TotalWaitTime += waitTime;
+        }
+        else
+        {
+            // No cook available -> Normal order must wait
+            // Exit loop (no more assignments possible this timestep
+            break;
+        }
+    }
 }
 
