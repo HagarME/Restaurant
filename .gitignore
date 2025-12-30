@@ -1,0 +1,27 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/Restaurant/CopilotIndices/17.14.1561.44479/CodeChunks.db
+/.vs/Restaurant/CopilotIndices/17.14.1561.44479/CodeChunks.db-shm
+/.vs/Restaurant/CopilotIndices/17.14.1561.44479/CodeChunks.db-wal
+/.vs/Restaurant/CopilotIndices/17.14.1561.44479/SemanticSymbols.db
+/.vs/Restaurant/CopilotIndices/17.14.1561.44479/SemanticSymbols.db-shm
+/.vs/Restaurant/CopilotIndices/17.14.1561.44479/SemanticSymbols.db-wal
+*.vsidx
+*.suo
+*.wsuo
+*.db
+*.db-shm
+*.opendb
+*.json
+*.ipch
+*.obj
+*.txt
+*.log
+*.ilk
+*.tlog
+*.idb
+*.recipe
+*.pdb
+*.exe
