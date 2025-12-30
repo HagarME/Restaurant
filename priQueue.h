@@ -115,4 +115,13 @@ public:
         result = array[i].data;
         return true;
     }
+
+    //get head
+    T getHead() const {
+        if (isEmpty()) 
+            throw std::out_of_range("getHead(): queue is empty");
+        return array[0].data;
+	}
+
+    //
 };

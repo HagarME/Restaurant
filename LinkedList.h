@@ -1,5 +1,5 @@
 #pragma once
-#include "../Final_phase1/Generic_DS/Node.h"
+#include "../Node.h"
 #include <iostream>
 
 using namespace std;

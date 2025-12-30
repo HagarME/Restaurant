@@ -60,3 +60,26 @@ FinishTime = time;
 void Order::setOrderSize(int size) {
 OrderSize = size; 
 }
+
+//==================================
+// VIP Priority calculation
+double Order::calculateVIPPriority() const
+{
+    // Priority equation: Higher value = Higher priority
+    // Here are the factors to understand the equation:
+	// 1. Waiting time (current_time - arrival_time): increases urgency for a certain order
+    // 2. Order price: higher paying customers get priority 
+    // 3. Order size: smaller orders served faster (more customers happy)
+
+    // Weights (we can change nums):  (determine how important a specific factor is compared to the others)
+    const double W_TIME = 2.0;    // Waiting time weight
+    const double W_PRICE = 0.5;   // Price weight
+    const double W_SIZE = -0.3;   // Negative: smaller orders have higher priority
+
+    // Normalize values to similar scales (adjusts the nums (like price) so they don't overpower the other factors)
+    double timeComponent = W_TIME * ArrTime;           // Older orders = higher priority
+    double priceComponent = W_PRICE * (totalMoney / 100.0);  // Normalize price
+    double sizeComponent = W_SIZE * OrderSize;         // Smaller = higher priority
+
+    return timeComponent + priceComponent + sizeComponent;
+}

@@ -133,6 +133,25 @@ public:
         }
         os << " ] (size: " << count << ")\n";
     }
+
+	// Get head node
+    Node<T>* getHead() const
+    {
+        return front;
+	}
+
+    //Delete first:
+    void deleteFirst()
+    {
+        if (isEmpty())
+            throw std::out_of_range("deleteFirst(): queue is empty");
+        Node<T>* temp = front;
+        front = front->getNext();
+        if (front == nullptr)
+            back = nullptr;
+        delete temp;
+        count--;
+	}
 };
 
 // Optional: global operator<< if you really want cout << queue 
@@ -142,5 +161,6 @@ std::ostream& operator<<(std::ostream& os, const LinkedQueue<T>& q)
     q.print(os);
     return os;
 }
+
 
 #endif // !LNKDQU

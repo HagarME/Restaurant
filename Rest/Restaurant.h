@@ -8,6 +8,9 @@
 #include "Order.h"
 #include "Cook.h"
 #include <string>
+#include "../priQueue.h"
+#include "../LinkedQueue.h"
+#include "../Rest/Cook.h"
 
 class Restaurant
 {
@@ -17,10 +20,10 @@ private:
     // Events must be in a traversable list (not Queue)
     LinkedList<Event*> Events;
 
-    // Waiting lists per order type (Phase 1 requirement)
+    // Waiting lists per order type
     LinkedList<Order*> waitNormal;
-    LinkedList<Order*> waitVegan;
-    LinkedList<Order*> waitVIP;
+    LinkedQueue<Order*> waitVegan;  // FIFO for vegan
+    priQueue<Order*> waitVIP;        // Priority Queue for VIP
 
     // In-Service and Finished lists (Phase 1 requirement)
     LinkedList<Order*> inService;
@@ -53,6 +56,12 @@ public:
     void FillDrawingList();
     void Just_A_Demo();	//just to show a demo and should be removed in phase1 1 & 2
     void AddtoDemoQueue(Order* po);	//adds an order to the demo queue
+
+    void AssignVIPOrders(int currentTime);
+    Cook* findAvailableCook(COOK_TYPE preferredType);
+    Order* findNormalOrderToPreempt(int currentTime);
+    Cook* findCookServingOrder(Order* order);
+    void preemptOrder(Cook* cook, Order* order, int currentTime);
 };
 
 #endif

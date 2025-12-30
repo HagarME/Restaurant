@@ -2,6 +2,7 @@
 #include "../Events/ArrivalEvent.h"
 #include "../Events/CancellationEvent.h"
 #include "../Events/PromotionEvent.h"
+#include "../Rest/Cook.h"
 #include <fstream>
 #include <string>
 
@@ -268,4 +269,206 @@ void Restaurant::FillDrawingList()
     p = finished.getHead();   while (p) { pGUI->AddToDrawingList(p->getItem()); p = p->getNext(); }
 
     // مفيش Cooks في Phase 1 خالص
+
+
+}
+
+//========================================
+//========================================
+
+
+void Restaurant::AssignVIPOrders(int currentTime)
+{
+    // Continue assigning VIP orders while we have waiting VIP orders and available cooks
+    while (!waitVIP.isEmpty())
+    {
+        Order* vipOrder;
+        int priority;
+
+        // Peek at highest priority VIP order (O(1))
+        if (!waitVIP.peek(vipOrder, priority))
+            break;
+
+        Cook* assignedCook = nullptr;
+
+        // Step 1: Try VIP cooks first (O(n) where n = number of VIP cooks)
+        assignedCook = findAvailableCook(COOK_VIP);
+
+        // Step 2: If no VIP cook available, try Normal cooks
+        if (!assignedCook)
+            assignedCook = findAvailableCook(COOK_NRM);
+
+        // Step 3: If still no cook, try Vegan cooks (last resort)
+        if (!assignedCook)
+            assignedCook = findAvailableCook(COOK_VGAN);
+
+        // Step 4: If STILL no cook available, try preempting a Normal order
+        if (!assignedCook)
+        {
+            Order* preemptedOrder = findNormalOrderToPreempt(currentTime);
+            if (preemptedOrder)
+            {
+                // Find the cook serving this Normal order
+                assignedCook = findCookServingOrder(preemptedOrder);
+
+                if (assignedCook)
+                {
+                    // Preempt the Normal order
+                    preemptOrder(assignedCook, preemptedOrder, currentTime);
+                }
+            }
+        }
+
+        // If we found a cook (either available or through preemption)
+        if (assignedCook)
+        {
+            // Remove from priority queue (O(log n))
+            waitVIP.dequeue(vipOrder, priority);
+
+            // Assign order to cook (O(1))
+            assignedCook->assignOrder(vipOrder, currentTime);
+
+            // Update order waiting time
+            vipOrder->setServTime(currentTime);
+            int waitTime = currentTime - vipOrder->GetArrTime();
+            // Store wait time if needed for statistics
+        }
+        else
+        {
+            // No cook available and no order to preempt
+            // VIP order must wait until next timestep
+            break;
+        }
+    }
+}
+
+// Helper: Find available cook of specific type
+// Complexity: O(n) where n = number of cooks of that type
+Cook* Restaurant::findAvailableCook(COOK_TYPE type)
+{
+    LinkedList<Cook*>* cookList = nullptr;
+
+    switch (type)
+    {
+    case COOK_VIP:  cookList = &vipCooks; break;
+    case COOK_NRM:  cookList = &normalCooks; break;
+    case COOK_VGAN: cookList = &veganCooks; break;
+    }
+
+    if (!cookList) return nullptr;
+
+    Node<Cook*>* current = cookList->getHead();
+    while (current)
+    {
+        Cook* cook = current->getItem();
+        if (cook->isAvailable())
+            return cook;
+
+        current = current->getNext();
+    }
+
+    return nullptr;  // No available cook of this type
+}
+
+// Find Normal order to preempt (choose least negative impact)
+// Complexity: O(n) where n = number of busy Normal cooks
+Order* Restaurant::findNormalOrderToPreempt(int currentTime)
+{
+    Order* bestToPreempt = nullptr;
+    int leastServiceTime = INT_MAX;
+
+    // Check all busy Normal cooks
+    Node<Cook*>* current = normalCooks.getHead();
+    while (current)
+    {
+        Cook* cook = current->getItem();
+
+        // Only consider busy cooks serving Normal orders
+        if (cook->isBusy())
+        {
+            Order* currentOrder = cook->getCurrentOrder();
+            if (currentOrder && currentOrder->GetType() == TYPE_NRM)
+            {
+                // Calculate how much service time has been spent
+                int startTime = currentOrder->GetServTime();
+                int serviceTimeSoFar = currentTime - startTime;
+                if (serviceTimeSoFar < 0) serviceTimeSoFar = 0;
+
+                // Preempt the order with least service time (least waste)
+                if (serviceTimeSoFar < leastServiceTime)
+                {
+                    leastServiceTime = serviceTimeSoFar;
+                    bestToPreempt = currentOrder;
+                }
+            }
+        }
+
+        current = current->getNext();
+    }
+
+    return bestToPreempt;
+}
+
+// Find which cook is serving a specific order
+// Complexity: O(total_cooks)
+Cook* Restaurant::findCookServingOrder(Order* order)
+{
+    // Check all cook lists
+    LinkedList<Cook*>* allLists[] = { &normalCooks, &veganCooks, &vipCooks };
+
+    for (int i = 0; i < 3; i++)
+    {
+        Node<Cook*>* current = allLists[i]->getHead();
+        while (current)
+        {
+            Cook* cook = current->getItem();
+            if (cook->getCurrentOrder() == order)
+                return cook;
+
+            current = current->getNext();
+        }
+    }
+
+    return nullptr;
+}
+
+// Complexity: O(1)
+void Restaurant::preemptOrder(Cook* cook, Order* order, int currentTime)
+{
+    // Calculate remaining dishes
+    int startTime = order->GetServTime();
+
+    // Calculate how many ticks the cook worked on it
+    int timeWorked = currentTime - startTime;
+    if (timeWorked < 0) timeWorked = 0; // Safety check
+
+    // Calculate dishes finished
+    // Formula: Time * Speed
+    int dishesCompleted = timeWorked * cook->getCurrentSpeed();
+
+    // Safety Cap: You cannot finish more dishes than the total order size
+    if (dishesCompleted > order->GetOrderSize())
+    {
+        dishesCompleted = order->GetOrderSize();
+    }
+
+    int remainingDishes = order->GetOrderSize() - dishesCompleted;
+
+    // Update order size to remaining dishes
+    order->setOrderSize(remainingDishes);
+
+    // Remove order from cook
+    cook->finishCurrentOrder();  // This frees the cook
+
+    // Return order to Normal waiting list with ORIGINAL arrival time
+    waitNormal.InsertEnd(order);
+    order->setStatus(WAIT);
+
+    if (pGUI)
+    {
+        pGUI->PrintMessage("Preempted Order " + to_string(order->GetID()) +
+            ". Completed " + to_string(dishesCompleted) + " dishes.");
+    }
+
+    // When reassigned later, waiting time will be recalculated
 }

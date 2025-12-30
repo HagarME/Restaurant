@@ -41,7 +41,11 @@ public:
     void setArrTime(int time);
     void setServTime(int time);
     void setFinishTime(int time);
-    void setOrderSize(int size);  
+    void setOrderSize(int size);
+
+	//==================================
+    // VIP Priority calculation
+    double calculateVIPPriority() const;
 };
 
 #endif
