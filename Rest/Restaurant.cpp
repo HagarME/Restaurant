@@ -230,6 +230,103 @@ void Restaurant::LoadInputFile(const string& filename)
     file.close();
 }
 
+//for bonus 1:
+/*void Restaurant::LoadInputFile(const string& filename)
+{
+    ifstream file(filename);
+    if (!file.is_open())
+    {
+        if (pGUI) pGUI->PrintMessage("ERROR: Cannot open file: " + filename);
+        return;
+    }
+
+    // Read number of cooks
+    int N, G, V, BO;
+    file >> N >> G >> V;
+    file >> BO;  // Break Orders (same for all)
+
+    // Read N Normal cooks
+    for (int i = 0; i < N; i++)
+    {
+        string cookID;
+        int speed, breakDuration;
+        file >> cookID >> speed >> breakDuration;
+
+        int id = i + 1;  // Or extract from cookID
+        Cook* newCook = new Cook(id, COOK_NRM, speed, BO, breakDuration);
+        normalCooks.InsertEnd(newCook);
+    }
+
+    // Read G Vegan cooks
+    for (int i = 0; i < G; i++)
+    {
+        string cookID;
+        int speed, breakDuration;
+        file >> cookID >> speed >> breakDuration;
+
+        int id = N + i + 1;
+        Cook* newCook = new Cook(id, COOK_VGAN, speed, BO, breakDuration);
+        veganCooks.InsertEnd(newCook);
+    }
+
+    // Read V VIP cooks
+    for (int i = 0; i < V; i++)
+    {
+        string cookID;
+        int speed, breakDuration;
+        file >> cookID >> speed >> breakDuration;
+
+        int id = N + G + i + 1;
+        Cook* newCook = new Cook(id, COOK_VIP, speed, BO, breakDuration);
+        vipCooks.InsertEnd(newCook);
+    }
+
+    // Sort each cook list by speed (descending - highest speed first)
+    // Complexity: O(N log N) + O(G log G) + O(V log V) = O(C log C) where C = total cooks
+    sortCooksBySpeed(normalCooks);
+    sortCooksBySpeed(veganCooks);
+    sortCooksBySpeed(vipCooks);
+
+    // Read auto-promotion limit
+    file >> AutoP;
+
+    // Read events (same as before)
+    int M;
+    file >> M;
+
+    for (int i = 0; i < M; i++)
+    {
+        char eventType;
+        file >> eventType;
+
+        if (eventType == 'R')
+        {
+            char typ; int ts, id, size; double money;
+            file >> typ >> ts >> id >> size >> money;
+            ORD_TYPE type = (typ == 'N') ? TYPE_NRM : (typ == 'G') ? TYPE_VGAN : TYPE_VIP;
+            Event* evt = new ArrivalEvent(ts, id, type, size, money);
+            Events.InsertEnd(evt);
+        }
+        else if (eventType == 'X')
+        {
+            int ts, id;
+            file >> ts >> id;
+            Event* evt = new CancellationEvent(ts, id);
+            Events.InsertEnd(evt);
+        }
+        else if (eventType == 'P')
+        {
+            int ts, id, extra;
+            file >> ts >> id >> extra;
+            Event* evt = new PromotionEvent(ts, id, extra);
+            Events.InsertEnd(evt);
+        }
+    }
+
+    file.close();
+}
+*/
+
 void Restaurant::ExecuteEvents(int CurrentTimeStep)
 {
     Node<Event*>* curr = Events.getHead();
@@ -541,7 +638,7 @@ void Restaurant::preemptOrder(Cook* cook, Order* order, int currentTime)
 
     // Calculate how many ticks the cook worked on it
     int timeWorked = currentTime - startTime;
-    if (timeWorked < 0) timeWorked = 0; // Safety check
+    if (timeWorked < 0) timeWorked = 0;
 
     // Calculate dishes finished
     // Formula: Time * Speed
@@ -687,4 +784,83 @@ void Restaurant::CheckAutoPromotionOptimized(int currentTime)
 
     }
 
+
+}
+
+//for bonus 1:
+// Merge Sort for LinkedList
+// Complexity: O(n log n) where n = number of cooks in the list
+void Restaurant::sortCooksBySpeed(LinkedList<Cook*>& cookList)
+{
+    if (cookList.isEmpty() || cookList.getSize() <= 1)
+        return;
+
+    // Convert to array for easier sorting
+    int count = cookList.getSize();
+    Cook** arr = new Cook * [count];
+
+    // Extract to array - O(n)
+    Node<Cook*>* curr = cookList.getHead();
+    int idx = 0;
+    while (curr)
+    {
+        arr[idx++] = curr->getItem();
+        curr = curr->getNext();
+    }
+
+    // Sort array by speed (descending) - O(n log n)
+    mergeSortCooks(arr, 0, count - 1);
+
+    // Clear original list - O(n)
+    while (!cookList.isEmpty())
+        cookList.DeleteFirst();
+
+    // Rebuild list with sorted order - O(n)
+    for (int i = 0; i < count; i++)
+        cookList.InsertEnd(arr[i]);
+
+    delete[] arr;
+}
+
+// Merge sort for cook array
+void Restaurant::mergeSortCooks(Cook** arr, int left, int right)
+{
+    if (left >= right) return;
+
+    int mid = left + (right - left) / 2;
+    mergeSortCooks(arr, left, mid);
+    mergeSortCooks(arr, mid + 1, right);
+    mergeCooks(arr, left, mid, right);
+}
+
+//Merge two sorted subarrays
+void Restaurant::mergeCooks(Cook** arr, int left, int mid, int right)
+{
+    int n1 = mid - left + 1;
+    int n2 = right - mid;
+
+    Cook** L = new Cook * [n1];
+    Cook** R = new Cook * [n2];
+
+    for (int i = 0; i < n1; i++)
+        L[i] = arr[left + i];
+    for (int i = 0; i < n2; i++)
+        R[i] = arr[mid + 1 + i];
+
+    int i = 0, j = 0, k = left;
+
+    // Merge in descending order (higher speed first)
+    while (i < n1 && j < n2)
+    {
+        if (L[i]->getCurrentSpeed() >= R[j]->getCurrentSpeed())
+            arr[k++] = L[i++];
+        else
+            arr[k++] = R[j++];
+    }
+
+    while (i < n1) arr[k++] = L[i++];
+    while (j < n2) arr[k++] = R[j++];
+
+    delete[] L;
+    delete[] R;
 }

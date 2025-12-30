@@ -57,6 +57,14 @@ private:
 
     void CheckAutoPromotionOptimized(int currentTime);
 
+    //for bonus 1:
+    void sortCooksBySpeed(LinkedList<Cook*>& cookList);
+
+    void mergeSortCooks(Cook** arr, int left, int right);
+
+    void mergeCooks(Cook** arr, int left, int mid, int right);
+
+
 
 public:
     Restaurant();
