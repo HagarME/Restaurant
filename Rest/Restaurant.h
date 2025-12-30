@@ -17,6 +17,9 @@ class Restaurant
 private:
     GUI* pGUI;
 
+    int AutoP;
+    int autoPromotedCount;
+
     // Events must be in a traversable list (not Queue)
     LinkedList<Event*> Events;
 
@@ -52,6 +55,8 @@ private:
 
     void AssignNormalOrders(int CurrentTimeStep);
 
+    void CheckAutoPromotionOptimized(int currentTime);
+
 
 public:
     Restaurant();
@@ -73,6 +78,8 @@ public:
     Order* findNormalOrderToPreempt(int currentTime);
     Cook* findCookServingOrder(Order* order);
     void preemptOrder(Cook* cook, Order* order, int currentTime);
+
+
 };
 
 

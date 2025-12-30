@@ -16,6 +16,8 @@ protected:
 
     // === Added as required by project specification ===
     int OrderSize;             // Number of dishes in the order 
+    Cook* assignedCook;
+
 public:
     // Constructor
     Order(int ID, ORD_TYPE r_Type);
@@ -33,6 +35,7 @@ public:
     int GetServTime() const;
     int GetFinishTime() const;
     int GetOrderSize() const;  
+    Cook* getCook() const;
 
     // --- Setters ---
     void setStatus(ORD_STATUS s);
@@ -42,12 +45,16 @@ public:
     void setServTime(int time);
     void setFinishTime(int time);
     void setOrderSize(int size);
+    void setType(ORD_TYPE newType) { type = newType; }
+
 
 	//==================================
     // VIP Priority calculation
     double calculateVIPPriority() const;
 
-	//==================================
+    //==================================
+    
+
 };
 
 #endif

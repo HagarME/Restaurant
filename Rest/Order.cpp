@@ -1,8 +1,9 @@
 #include "Order.h"
+#include "Cook.h"
 // Constructor and Destructor 
 Order::Order(int ID, ORD_TYPE r_Type)
     : ID(ID), type(r_Type), status(WAIT), Distance(0), totalMoney(0.0),
-    ArrTime(0), ServTime(0), FinishTime(0), OrderSize(0)
+    ArrTime(0), ServTime(0), FinishTime(0), OrderSize(0), assignedCook(nullptr)
 {
 }
 
@@ -82,4 +83,9 @@ double Order::calculateVIPPriority() const
     double sizeComponent = W_SIZE * OrderSize;         // Smaller = higher priority
 
     return timeComponent + priceComponent + sizeComponent;
+}
+
+Cook* Order::getCook() const
+{
+    return assignedCook;
 }

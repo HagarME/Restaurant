@@ -133,6 +133,8 @@ void Restaurant::RunSimulation()
             ExecuteEvents(CurrentTimeStep);
 
             //in this exact order
+            CheckAutoPromotionOptimized(CurrentTimeStep);
+            UpdateServiceList(CurrentTimeStep);
             AssignVIPOrders(CurrentTimeStep);      // Highest priority first
             AssignNormalOrders(CurrentTimeStep);    // Then Normal orders
             //then vegan orders...
@@ -331,59 +333,104 @@ void Restaurant::FillDrawingList()
 
 void Restaurant::AssignVIPOrders(int currentTime)
 {
-    // Continue assigning VIP orders while we have waiting VIP orders and available cooks
+    // Complexity: O(V + N + G) -> done once, not per order
+
+    LinkedList<Cook*> availableVIP;
+    LinkedList<Cook*> availableNormal;
+    LinkedList<Cook*> availableVegan;
+
+    // Scan VIP cooks
+    Node<Cook*>* curr = vipCooks.getHead();
+
+    while (curr)
+    {
+		//this whole loop is just because insertend acceps reference to pointer not pointer itself
+        if (curr->getItem()->isAvailable())
+        {
+            Cook* VIPCookPtr = curr->getItem();
+            availableVIP.InsertEnd(VIPCookPtr);
+        }
+        curr = curr->getNext();
+    }
+
+    // Scan Normal cooks
+    curr = normalCooks.getHead();
+    while (curr)
+    {
+        if (curr->getItem()->isAvailable())
+        {
+            Cook* NormalCookPtr = curr->getItem();
+            availableNormal.InsertEnd(NormalCookPtr);
+        }
+        curr = curr->getNext();
+    }
+
+    // Scan Vegan cooks
+    curr = veganCooks.getHead();
+    while (curr)
+    {
+        if (curr->getItem()->isAvailable())
+        {
+            Cook* veganCookPtr = curr->getItem();
+            availableVegan.InsertEnd(veganCookPtr);
+        }
+        curr = curr->getNext();
+    }
+
+    // Process VIP orders using pre-built lists
+    // Complexity: O(VP × log VP) -> VP = VIP orders processed
     while (!waitVIP.isEmpty())
     {
         Order* vipOrder;
         int priority;
 
-        // Peek at highest priority VIP order (O(1))
         if (!waitVIP.peek(vipOrder, priority))
             break;
 
         Cook* assignedCook = nullptr;
 
-        // Step 1: Try VIP cooks first (O(n) where n = number of VIP cooks)
-        assignedCook = findAvailableCook(COOK_VIP);
+        // Try to get cook from available lists (O(1) each)
+        if (!availableVIP.isEmpty())
+        {
+            assignedCook = availableVIP.GetHead();
+            availableVIP.DeleteFirst();
+        }
+        else if (!availableNormal.isEmpty())
+        {
+            assignedCook = availableNormal.GetHead();
+            availableNormal.DeleteFirst();
+        }
+        else if (!availableVegan.isEmpty())
+        {
+            assignedCook = availableVegan.GetHead();
+            availableVegan.DeleteFirst();
+        }
 
-        // Step 2: If no VIP cook available, try Normal cooks
-        if (!assignedCook)
-            assignedCook = findAvailableCook(COOK_NRM);
-
-        // Step 3: If still no cook, try Vegan cooks (last resort)
-        if (!assignedCook)
-            assignedCook = findAvailableCook(COOK_VGAN);
-
-        // Step 4: If STILL no cook available, try preempting a Normal order
+        // OPTIMIZATION 3: Only attempt preemption if no available cooks
+        // and we have waiting VIP orders that need service
         if (!assignedCook)
         {
+            // Preemption: O(N) but only when necessary
             Order* preemptedOrder = findNormalOrderToPreempt(currentTime);
             if (preemptedOrder)
             {
-                // Find the cook serving this Normal order
                 assignedCook = findCookServingOrder(preemptedOrder);
-
                 if (assignedCook)
                 {
-                    // Preempt the Normal order
                     preemptOrder(assignedCook, preemptedOrder, currentTime);
                 }
             }
         }
 
-        // If we found a cook (either available or through preemption)
+        // Assign if we found a cook
         if (assignedCook)
         {
-            // Remove from priority queue (O(log n))
-            waitVIP.dequeue(vipOrder, priority);
-
-            // Assign order to cook (O(1))
+            waitVIP.dequeue(vipOrder, priority);  // O(log W)
             assignedCook->assignOrder(vipOrder, currentTime);
 
-            // Update order waiting time
-            vipOrder->setServTime(currentTime);
+            // Update statistics
             int waitTime = currentTime - vipOrder->GetArrTime();
-            // Store wait time if needed for statistics
+            TotalWaitTime += waitTime;
         }
         else
         {
@@ -393,6 +440,7 @@ void Restaurant::AssignVIPOrders(int currentTime)
         }
     }
 }
+
 
 // Helper: Find available cook of specific type
 // Complexity: O(n) where n = number of cooks of that type
@@ -575,3 +623,67 @@ void Restaurant::AssignNormalOrders(int currentTime)
     }
 }
 
+
+
+void Restaurant::CheckAutoPromotionOptimized(int currentTime)
+{
+    //  Keep track of oldest Normal order's arrival time
+    // If oldest hasn't exceeded limit, none have
+
+    if (waitNormal.isEmpty())
+        return;
+
+    // Peek at oldest order
+    Node<Order*>* oldestNode = waitNormal.getHead();
+    Order* oldestOrder = oldestNode->getItem();
+
+    // Check oldest order first - O(1)
+    int oldestWaitTime = currentTime - oldestOrder->GetArrTime();
+
+    if (oldestWaitTime <= AutoP)
+    {
+        // If oldest hasn't exceeded limit, none have
+        return;
+    }
+
+    // If we reach here, at least one order needs promotion
+    // Scan and promote all that exceed limit - O(W_N)
+    Node<Order*>* curr = waitNormal.getHead();
+
+    while (curr)
+    {
+        Order* order = curr->getItem();
+        int waitingTime = currentTime - order->GetArrTime();
+
+        if (waitingTime > AutoP)
+        {
+            // This order needs promotion
+            Node<Order*>* toPromote = curr;
+            curr = curr->getNext();  // Move to next before deletion
+
+            // Remove from Normal list
+            Order* promotedOrder = toPromote->getItem();
+            waitNormal.DeleteNodeByPointer(toPromote);
+
+            // Add to VIP queue
+            double priority = promotedOrder->calculateVIPPriority();
+            waitVIP.enqueue(promotedOrder, (int)priority);
+
+            autoPromotedCount++;
+
+            if (pGUI)
+            {
+                pGUI->PrintMessage("Auto-promoted Order " +
+                    to_string(promotedOrder->GetID()));
+            }
+        }
+        else
+        {
+            //If the oldest person in the line hasn't waited long enough to be promoted yet, 
+            //then the people behind them definitely haven't waited long enough either.
+            break;
+        }
+
+    }
+
+}
