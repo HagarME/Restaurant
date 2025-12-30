@@ -5,13 +5,64 @@
 #include "../Rest/Cook.h"
 #include <fstream>
 #include <string>
+#include <cmath>
 
-Restaurant::Restaurant() : pGUI(nullptr) {}
+Restaurant::Restaurant()
+    : pGUI(nullptr),
+      TotalWaitTime(0),
+      TotalServTime(0),
+      TotalTurnaround(0),
+      CountFinished(0)
+{
+}
 
 Restaurant::~Restaurant()
 {
     if (pGUI) delete pGUI;
 }
+
+void Restaurant::UpdateServiceList(int CurrentTimeStep)
+{
+    Node<Order*>* curr = inService.getHead();
+
+    while (curr)
+    {
+        Order* ord = curr->getItem();
+        Cook* ck = ord->getCook();
+
+        int serviceDuration =
+            (ord->GetOrderSize() + ck->getCurrentSpeed() - 1) / ck->getCurrentSpeed();
+
+        if (CurrentTimeStep - ord->GetServTime() >= serviceDuration)
+        {
+            // Finish order
+            ord->setFinishTime(CurrentTimeStep);
+            ord->setStatus(DONE);
+
+            int waitTime = ord->GetServTime() - ord->GetArrTime();
+            int turnaround = ord->GetFinishTime() - ord->GetArrTime();
+
+            TotalWaitTime += waitTime;
+            TotalServTime += serviceDuration;
+            TotalTurnaround += turnaround;
+            CountFinished++;
+
+            // Free cook properly
+            ck->finishCurrentOrder();
+
+            Node<Order*>* toDelete = curr;
+            curr = curr->getNext();
+
+            inService.DeleteNodeByPointer(toDelete);
+            finished.InsertEnd(ord);
+        }
+        else
+        {
+            curr = curr->getNext();
+        }
+    }
+}
+
 
 // The main simulation loop 
 void Restaurant::RunSimulation()
@@ -472,3 +523,4 @@ void Restaurant::preemptOrder(Cook* cook, Order* order, int currentTime)
 
     // When reassigned later, waiting time will be recalculated
 }
+
