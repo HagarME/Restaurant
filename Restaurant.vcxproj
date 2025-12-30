@@ -105,7 +105,6 @@
     <ClInclude Include="GUI\GUI.h" />
     <ClInclude Include="LinkedList.h" />
     <ClInclude Include="LinkedQueue.h" />
-    <ClInclude Include="priNode.h" />
     <ClInclude Include="priQueue.h" />
     <ClInclude Include="PromotionEvent.h" />
     <ClInclude Include="Rest\Cook.h" />
