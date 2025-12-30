@@ -137,7 +137,8 @@ void Restaurant::RunSimulation()
             UpdateServiceList(CurrentTimeStep);
             AssignVIPOrders(CurrentTimeStep);      // Highest priority first
             AssignNormalOrders(CurrentTimeStep);    // Then Normal orders
-            //then vegan orders...
+
+            AssignVeganOrders(CurrentTimeStep);     // Then vegan orders...
 
             FillDrawingList();
             pGUI->UpdateInterface();
@@ -406,7 +407,7 @@ void Restaurant::AssignVIPOrders(int currentTime)
             availableVegan.DeleteFirst();
         }
 
-        // OPTIMIZATION 3: Only attempt preemption if no available cooks
+        // Only attempt preemption if no available cooks
         // and we have waiting VIP orders that need service
         if (!assignedCook)
         {
