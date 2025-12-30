@@ -36,6 +36,15 @@ private:
 
     int AutoP; // Auto-promotion time limit
 
+
+    void UpdateServiceList(int CurrentTimeStep);
+
+    int TotalWaitTime;
+    int TotalServTime;
+    int TotalTurnaround;
+    int CountFinished;
+
+
     // Helper functions
     void LoadInputFile(const std::string& filename);
     void ExecuteEvents(int currentTime);
@@ -63,5 +72,6 @@ public:
     Cook* findCookServingOrder(Order* order);
     void preemptOrder(Cook* cook, Order* order, int currentTime);
 };
+
 
 #endif
