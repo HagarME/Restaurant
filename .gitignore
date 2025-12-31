@@ -25,3 +25,5 @@
 *.recipe
 *.pdb
 *.exe
+*.cpp
+/.vs/Restaurant/v17/Browse.VC.db-wal
