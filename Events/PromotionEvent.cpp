@@ -8,6 +8,6 @@ PromotionEvent::PromotionEvent(int eTime, int ordID, int extraMoney)
 
 void PromotionEvent::Execute(Restaurant* pRest)
 {
-    // Phase 1: promotions are ignored (no-op).
-    // Implement promotion logic in later phases if required.
+    // Find and promote the Normal order to VIP
+    pRest->PromoteOrder(OrderID, ExtraMoney);
 }

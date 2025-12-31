@@ -3,7 +3,8 @@
 // Constructor and Destructor 
 Order::Order(int ID, ORD_TYPE r_Type)
     : ID(ID), type(r_Type), status(WAIT), Distance(0), totalMoney(0.0),
-    ArrTime(0), ServTime(0), FinishTime(0), OrderSize(0), assignedCook(nullptr)
+    ArrTime(0), ServTime(0), FinishTime(0), Deadline(0), isLate(false),
+    OrderSize(0), assignedCook(nullptr)
 {
 }
 
@@ -36,7 +37,13 @@ int Order::GetFinishTime() const {
 return FinishTime; 
 }
 int Order::GetOrderSize() const {
-return OrderSize; 
+    return OrderSize; 
+}
+int Order::getDeadline() const {
+    return Deadline;
+}
+bool Order::getIsLate() const {
+    return isLate;
 }
 
 // --- Setters ---
@@ -59,7 +66,13 @@ void Order::setFinishTime(int time) {
 FinishTime = time; 
 }
 void Order::setOrderSize(int size) {
-OrderSize = size; 
+    OrderSize = size; 
+}
+void Order::setDeadline(int deadline) {
+    Deadline = deadline;
+}
+void Order::setIsLate(bool late) {
+    isLate = late;
 }
 
 //==================================
@@ -88,4 +101,23 @@ double Order::calculateVIPPriority() const
 Cook* Order::getCook() const
 {
     return assignedCook;
+}
+
+//==================================
+// Deadline calculation: D = AT + f(SIZE, Price)
+// Function: Base time based on size, with adjustment for price
+// Higher price orders get slightly more time
+int Order::calculateDeadline() const
+{
+    // Base deadline formula:
+    // D = AT + (Size * 2) + (Price / 50)
+    // Size factor: 2 timesteps per dish (reasonable cooking time)
+    // Price factor: Higher paying customers get a bit more time
+    
+    double sizeComponent = OrderSize * 2.0;  // 2 timesteps per dish
+    double priceComponent = totalMoney / 50.0;  // Normalize price impact
+    
+    int deadline = ArrTime + (int)(sizeComponent + priceComponent);
+    
+    return deadline;
 }

@@ -15,6 +15,8 @@ protected:
     double totalMoney;         // Total order money
 
     int ArrTime, ServTime, FinishTime;  // Arrival, service start, and finish times
+    int Deadline;              // Deadline for order completion
+    bool isLate;               // Flag to track if order finished late
 
     // === Added as required by project specification ===
     int OrderSize;             // Number of dishes in the order 
@@ -38,6 +40,8 @@ public:
     int GetFinishTime() const;
     int GetOrderSize() const;  
     Cook* getCook() const;
+    int getDeadline() const;
+    bool getIsLate() const;
 
     // --- Setters ---
     void setStatus(ORD_STATUS s);
@@ -48,11 +52,17 @@ public:
     void setFinishTime(int time);
     void setOrderSize(int size);
     void setType(ORD_TYPE newType) { type = newType; }
+    void setDeadline(int deadline);
+    void setIsLate(bool late);
 
 
 	//==================================
     // VIP Priority calculation
     double calculateVIPPriority() const;
+    
+    // Deadline calculation: D = AT + f(SIZE, Price)
+    // Function increases with SIZE and Price
+    int calculateDeadline() const;
 
     //==================================
     

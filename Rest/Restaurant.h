@@ -46,6 +46,7 @@ private:
     int TotalServTime;
     int TotalTurnaround;
     int CountFinished;
+    int lateOrderCount;  // Track number of late orders
 
 
     void LoadInputFile(const std::string& filename);
@@ -57,6 +58,11 @@ private:
     void AssignVeganOrders(int CurrentTimeStep);
 
     void CheckAutoPromotionOptimized(int currentTime);
+    
+    // Dynamic behavior methods
+    void TriggerCookBreaks(int currentTime);
+    bool isSystemOverloaded() const;
+    void TriggerRandomInjuries(int currentTime);
 
     //for bonus 1:
     void sortCooksBySpeed(LinkedList<Cook*>& cookList);
@@ -64,6 +70,9 @@ private:
     void mergeSortCooks(Cook** arr, int left, int right);
 
     void mergeCooks(Cook** arr, int left, int mid, int right);
+    
+    // Output file generation
+    void WriteOutputFile(const std::string& filename);
 
 
 
@@ -76,6 +85,7 @@ public:
     // Callbacks from Events
     void AddToWaitingList(Order* pOrd);
     void CancelOrder(int orderID);
+    void PromoteOrder(int orderID, int extraMoney);
 
     // GUI support
     void FillDrawingList();
