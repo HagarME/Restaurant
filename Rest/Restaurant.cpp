@@ -1371,3 +1371,8 @@ void Restaurant::TriggerRandomInjuries(int currentTime)
         cookNode = cookNode->getNext();
     }
 }
+
+void Restaurant::AddVIPOrder(Order* order, int priority)
+{
+    waitVIP.enqueue(order, priority);
+}
