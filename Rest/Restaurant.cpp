@@ -358,18 +358,20 @@ void Restaurant::MoveOneFromEachWaitToInService()
     }
     if (!waitVegan.isEmpty())
     {
-        Order* o = waitVegan.getHead()->getItem();
+        Order* o = waitVegan.peek();
         o->setStatus(SRV);
         inService.InsertEnd(o);
-        waitVegan.DeleteFirst();
+        waitVegan.dequeue();
     }
     if (!waitVIP.isEmpty())
     {
-        Order* o = waitVIP.getHead()->getItem();
+        Order* o; int p;
+        waitVIP.peek(o, p);
         o->setStatus(SRV);
         inService.InsertEnd(o);
-        waitVIP.DeleteFirst();
+        waitVIP.dequeue(o, p);  // Pass arguments for dequeue
     }
+
 }
 // Move one order from in-service to finished
 void Restaurant::MoveOneFromInServiceToFinished()
@@ -388,8 +390,11 @@ void Restaurant::AddToWaitingList(Order* pOrd)
     switch (pOrd->GetType())
     {
     case TYPE_NRM: waitNormal.InsertEnd(pOrd); break;
-    case TYPE_VGAN: waitVegan.InsertEnd(pOrd); break;
-    case TYPE_VIP: waitVIP.InsertEnd(pOrd); break;
+    case TYPE_VGAN: waitVegan.enqueue(pOrd); break;
+    case TYPE_VIP: 
+        double priority = pOrd->calculateVIPPriority();
+        waitVIP.enqueue(pOrd, (int)priority); 
+        break;
     }
 }
 // Cancel order by ID
@@ -415,7 +420,12 @@ void Restaurant::FillDrawingList()
 
     p = waitNormal.getHead(); while (p) { pGUI->AddToDrawingList(p->getItem()); p = p->getNext(); }
     p = waitVegan.getHead();  while (p) { pGUI->AddToDrawingList(p->getItem()); p = p->getNext(); }
-    p = waitVIP.getHead();   while (p) { pGUI->AddToDrawingList(p->getItem()); p = p->getNext(); }
+    // For priQueue, we cannot access nodes directly. Use getItem(i, ref)
+    for (int i = 0; i < waitVIP.getSize(); i++) {
+        Order* ord;
+        if (waitVIP.getItem(i, ord))
+            pGUI->AddToDrawingList(ord);
+    }
 
     p = inService.getHead();  while (p) { pGUI->AddToDrawingList(p->getItem()); p = p->getNext(); }
     p = finished.getHead();   while (p) { pGUI->AddToDrawingList(p->getItem()); p = p->getNext(); }
@@ -722,6 +732,27 @@ void Restaurant::AssignNormalOrders(int currentTime)
 }
 
 
+
+void Restaurant::AssignVeganOrders(int currentTime)
+{
+    while (!waitVegan.isEmpty())
+    {
+        Order* veganOrder = waitVegan.peek();
+        Cook* assignedCook = findAvailableCook(COOK_VGAN);
+
+        if (assignedCook)
+        {
+            waitVegan.dequeue();
+            assignedCook->assignOrder(veganOrder, currentTime);
+            int waitTime = currentTime - veganOrder->GetArrTime();
+            TotalWaitTime += waitTime;
+        }
+        else
+        {
+            break;
+        }
+    }
+}
 
 void Restaurant::CheckAutoPromotionOptimized(int currentTime)
 {

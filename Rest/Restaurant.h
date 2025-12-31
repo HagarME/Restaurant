@@ -37,7 +37,7 @@ private:
     LinkedList<Cook*> veganCooks;
     LinkedList<Cook*> vipCooks;
 
-    int AutoP; // Auto-promotion time limit
+
 
 
     void UpdateServiceList(int CurrentTimeStep);
@@ -54,6 +54,7 @@ private:
     void MoveOneFromInServiceToFinished();
 
     void AssignNormalOrders(int CurrentTimeStep);
+    void AssignVeganOrders(int CurrentTimeStep);
 
     void CheckAutoPromotionOptimized(int currentTime);
 

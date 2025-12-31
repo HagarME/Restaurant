@@ -3,6 +3,8 @@
 
 #include "..\Defs.h"
 
+class Cook;
+
 class Order
 {
 protected:

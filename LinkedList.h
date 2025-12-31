@@ -1,5 +1,5 @@
 #pragma once
-#include "../Node.h"
+#include "../Generic_DS/Node.h"
 #include <iostream>
 
 using namespace std;
@@ -144,7 +144,7 @@ public:
 
 	T GetHead() {
 		if (isEmpty()) {
-			return;
+			return nullptr;
 		}
 		return head->getItem();
 	}
