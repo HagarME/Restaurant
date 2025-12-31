@@ -1,5 +1,5 @@
 ﻿#include "ArrivalEvent.h"
-#include "..\Rest\Restaurant.h"
+#include "../Rest/Restaurant.h"
 
 
 ArrivalEvent::ArrivalEvent(int eTime, int oID, ORD_TYPE oType, int size, double money)
