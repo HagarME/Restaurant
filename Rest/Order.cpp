@@ -74,6 +74,9 @@ void Order::setDeadline(int deadline) {
 void Order::setIsLate(bool late) {
     isLate = late;
 }
+void Order::setCook(Cook* cook) {
+    assignedCook = cook;
+}
 
 //==================================
 // VIP Priority calculation

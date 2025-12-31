@@ -47,6 +47,7 @@ void Cook::assignOrder(Order* pOrder, int currentTime)
     status = BUSY;
     pOrder->setStatus(SRV);
     pOrder->setServTime(currentTime);
+    pOrder->setCook(this);
 }
 
 Order* Cook::finishCurrentOrder()

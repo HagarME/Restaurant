@@ -54,6 +54,7 @@ public:
     void setType(ORD_TYPE newType) { type = newType; }
     void setDeadline(int deadline);
     void setIsLate(bool late);
+    void setCook(Cook* cook);
 
 
 	//==================================

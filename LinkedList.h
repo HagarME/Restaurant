@@ -1,5 +1,5 @@
 #pragma once
-#include "../Generic_DS/Node.h"
+#include "Generic_DS/Node.h"
 #include <iostream>
 
 using namespace std;
@@ -43,9 +43,9 @@ public:
 			tail = newNode;
 		}
 		else {
-			newNode->setNext(head);
-			head->setPrev(newNode);
-			head = newNode;
+			tail->setNext(newNode);
+			newNode->setPrev(tail);
+			tail = newNode;
 		}
 		size++;
 	}
