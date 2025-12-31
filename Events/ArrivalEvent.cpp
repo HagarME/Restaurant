@@ -15,8 +15,15 @@ void ArrivalEvent::Execute(Restaurant* pRest)
     pOrder->setArrTime(Time_Step);
     pOrder->setOrderSize(OrderSize);
     pOrder->setTotalMoney(OrdMoney);
-    // Distance can be set later if needed; for now, leave as 0
-
-    // In Phase 1: add to appropriate waiting list (no cook assignment)
-    pRest->AddToWaitingList(pOrder);
+	if (OrdType == TYPE_VIP)
+	{
+	    // Calculate priority for VIP order
+	    int priority = (int)(pOrder->calculateVIPPriority());
+	    pRest->AddVIPOrder(pOrder, priority);
+	}
+	else
+	{
+	    pRest->AddToWaitingList(pOrder);
+	}
 }
+
