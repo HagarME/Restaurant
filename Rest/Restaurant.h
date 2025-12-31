@@ -73,6 +73,8 @@ private:
     
     // Output file generation
     void WriteOutputFile(const std::string& filename);
+    void AddVIPOrder(Order* order, int priority);
+
 
 
 
@@ -103,3 +105,4 @@ public:
 
 
 #endif
+
