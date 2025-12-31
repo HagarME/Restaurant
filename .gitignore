@@ -27,3 +27,5 @@
 *.log
 *.recipe
 *.ilk
+/Restaurant.vcxproj.filters
+/Restaurant.vcxproj
