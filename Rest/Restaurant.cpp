@@ -142,7 +142,7 @@ void Restaurant::RunSimulation()
         LoadInputFile(filename);
 
        int CurrentTimeStep = 1;
-const int MAX_TIMESTEPS = 5000;  // Safety limit
+       const int MAX_TIMESTEPS = 5000;  // Safety limit
 
 
         while (true)
@@ -159,7 +159,7 @@ const int MAX_TIMESTEPS = 5000;  // Safety limit
             // Delay in demo mode to see WAIT orders
             if (mode == MODE_DEMO) {
                 clock_t delay = clock();
-                while (clock() - delay < 400) {}  // 800ms to see waiting orders
+                while (clock() - delay < 200) {}  // 800ms to see waiting orders
             }
             
             UpdateServiceList(CurrentTimeStep);
@@ -177,7 +177,7 @@ const int MAX_TIMESTEPS = 5000;  // Safety limit
             else if (mode == MODE_DEMO)
             {
                 clock_t delay = clock();
-				while (clock() - delay < 1500) {}  // 1.5 seconds to see orders being served
+				while (clock() - delay < 250) {}  // 1.5 seconds to see orders being served
             }
 
 			// to finish simulation
@@ -223,7 +223,7 @@ const int MAX_TIMESTEPS = 5000;  // Safety limit
         }
 
         // Write output file
-        WriteOutputFile("output.txt");
+        WriteOutputFile("OUT.txt");
         
         pGUI->PrintMessage("Simulation Finished Successfully!");
         if (mode != MODE_SLNT)
@@ -556,7 +556,7 @@ void Restaurant::FillDrawingList()
 void Restaurant::AssignVIPOrders(int currentTime)
 {
     // Complexity: O(V + N + G) -> done once, not per order
-
+    
     LinkedList<Cook*> availableVIP;
     LinkedList<Cook*> availableNormal;
     LinkedList<Cook*> availableVegan;
@@ -1029,14 +1029,19 @@ void Restaurant::mergeCooks(Cook** arr, int left, int mid, int right)
 // ========================================
 
 
-
 // ========================================
 // Display output via GUI with all simulation results and statistics
 // Must be called at end of simulation
 // Complexity: O(N log N) where N = finished orders (for sorting)
 void Restaurant::WriteOutputFile(const std::string& filename)
 {
-    if (!pGUI) return;
+    // Open output file for writing
+    ofstream outFile(filename);
+    if (!outFile.is_open())
+    {
+        if (pGUI) pGUI->PrintMessage("ERROR: Cannot create output file: " + filename);
+        return;
+    }
 
     // Convert finished linked list to array for sorting
     int numOrders = finished.getSize();
@@ -1079,11 +1084,10 @@ void Restaurant::WriteOutputFile(const std::string& filename)
         }
     }
 
-    // Display header
-    pGUI->PrintMessage("\n==================== SIMULATION RESULTS ====================");
-    pGUI->PrintMessage("FT\tID\tAT\tWT\tST");
+    // Write header to file
+    outFile << "FT\tID\tAT\tWT\tST" << endl;
 
-    // Display sorted orders
+    // Write sorted orders to file
     for (int i = 0; i < numOrders; i++)
     {
         Order* ord = orderArray[i];
@@ -1093,9 +1097,7 @@ void Restaurant::WriteOutputFile(const std::string& filename)
         int wt = ord->GetServTime() - ord->GetArrTime();  // WT = ServTime - ArrTime
         int st = ft - ord->GetServTime();                  // ST = FinishTime - ServTime
 
-        string line = to_string(ft) + "\t" + to_string(id) + "\t" + to_string(at) + "\t" 
-                    + to_string(wt) + "\t" + to_string(st);
-        pGUI->PrintMessage(line);
+        outFile << ft << "\t" << id << "\t" << at << "\t" << wt << "\t" << st << endl;
     }
 
     delete[] orderArray;
@@ -1119,67 +1121,20 @@ void Restaurant::WriteOutputFile(const std::string& filename)
     // Count total cooks
     int totalCooks = normalCooks.getSize() + veganCooks.getSize() + vipCooks.getSize();
 
-    // Display statistics
-    pGUI->PrintMessage("\n==================== STATISTICS ====================");
-    
-    char buffer[256];
-    sprintf(buffer, "Orders: %d [Norm:%d, Veg:%d, VIP:%d]", numOrders, normalCount, veganCount, vipCount);
-    pGUI->PrintMessage(buffer);
-    
-    sprintf(buffer, "Cooks: %d [Norm:%d, Veg:%d, VIP:%d]", totalCooks, normalCooks.getSize(), veganCooks.getSize(), vipCooks.getSize());
-    pGUI->PrintMessage(buffer);
-    
-    sprintf(buffer, "Avg Wait = %.2f, Avg Serv = %.2f", avgWait, avgServ);
-    pGUI->PrintMessage(buffer);
-    
-    sprintf(buffer, "Auto-promoted: %d", autoPromotedCount);
-    pGUI->PrintMessage(buffer);
-    
-    sprintf(buffer, "Late Orders: %d", lateOrderCount);
-    pGUI->PrintMessage(buffer);
+    // Write statistics to file
+    outFile << endl;
+    outFile << "Orders: " << numOrders << " [Norm:" << normalCount << ", Veg:" << veganCount << ", VIP:" << vipCount << "]" << endl;
+    outFile << "Cooks: " << totalCooks << " [Norm:" << normalCooks.getSize() << ", Veg:" << veganCooks.getSize() << ", VIP:" << vipCooks.getSize() << "]" << endl;
+    outFile << fixed << setprecision(2);
+    outFile << "Avg Wait = " << avgWait << ", Avg Serv = " << avgServ << endl;
+    outFile << "Auto-promoted: " << autoPromotedCount << endl;
+    outFile << "Late Orders: " << lateOrderCount << endl;
 
-    // Per-cook statistics
-    pGUI->PrintMessage("\n==================== COOK STATISTICS ====================");
-    
-    // Normal cooks
-    Node<Cook*>* cookNode = normalCooks.getHead();
-    while (cookNode)
+    outFile.close();
+
+    // Display summary to GUI
+    if (pGUI)
     {
-        Cook* cook = cookNode->getItem();
-        sprintf(buffer, "Cook N%d: Orders [Norm:%d, Veg:%d, VIP:%d], Busy: %d, Idle: %d, Break/Injury: %d, Utilization: %.1f%%",
-                cook->GetID(), cook->getNormalOrdersServed(), cook->getVeganOrdersServed(), 
-                cook->getVIPOrdersServed(), cook->getTotalBusyTime(), cook->getTotalIdleTime(),
-                cook->getTotalBreakTime(), cook->getUtilization());
-        pGUI->PrintMessage(buffer);
-        cookNode = cookNode->getNext();
+        pGUI->PrintMessage("Output written to: " + filename);
     }
-
-    // Vegan cooks
-    cookNode = veganCooks.getHead();
-    while (cookNode)
-    {
-        Cook* cook = cookNode->getItem();
-        sprintf(buffer, "Cook G%d: Orders [Norm:%d, Veg:%d, VIP:%d], Busy: %d, Idle: %d, Break/Injury: %d, Utilization: %.1f%%",
-                cook->GetID(), cook->getNormalOrdersServed(), cook->getVeganOrdersServed(), 
-                cook->getVIPOrdersServed(), cook->getTotalBusyTime(), cook->getTotalIdleTime(),
-                cook->getTotalBreakTime(), cook->getUtilization());
-        pGUI->PrintMessage(buffer);
-        cookNode = cookNode->getNext();
-    }
-
-    // VIP cooks
-    cookNode = vipCooks.getHead();
-    while (cookNode)
-    {
-        Cook* cook = cookNode->getItem();
-        sprintf(buffer, "Cook V%d: Orders [Norm:%d, Veg:%d, VIP:%d], Busy: %d, Idle: %d, Break/Injury: %d, Utilization: %.1f%%",
-                cook->GetID(), cook->getNormalOrdersServed(), cook->getVeganOrdersServed(), 
-                cook->getVIPOrdersServed(), cook->getTotalBusyTime(), cook->getTotalIdleTime(),
-                cook->getTotalBreakTime(), cook->getUtilization());
-        pGUI->PrintMessage(buffer);
-        cookNode = cookNode->getNext();
-    }
-
-    pGUI->PrintMessage("============================================================\n");
-    pGUI->PrintMessage("Simulation completed successfully!");
 }
